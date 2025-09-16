@@ -32,4 +32,5 @@ class Product(models.Model):
     
     def increment_sales_count(self):
         self.sales_count += 1
+        self.stock -= 1
         self.save()

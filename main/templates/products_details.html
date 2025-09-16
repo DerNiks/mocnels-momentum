@@ -1,0 +1,22 @@
+{% extends 'base.html'%}
+{% block content %}
+
+<p><a href="{%url 'main:show_main' %}"> <button>Back to Products</button></a></p>
+
+<h1>Products Details</h1>
+<h2>{{ product.title }}</h2>
+<p><b>{{ product.brand }}</b> |
+    <b>{{ product.get_category_display }}</b>{% if product.is_featured %} | 
+    <b>Featured</b>{% endif %}{% if product.is_best_seller %} | 
+    <b>Best Seller</b>{% endif %} | <i>{{ product.created_at|date:"d M Y H:i" }}</i> 
+    | Stock: {{ product.stock }} | Sold: {{ product.sales_count }}</p>
+
+{% if product.thumbnail %}
+<img src="{{ product.thumbnail }}" alt="Product thumbnail" width="250">
+<br /><br />
+{% endif %}
+
+<p>{{ product.description }}</p>
+
+{% endblock content %}
+
