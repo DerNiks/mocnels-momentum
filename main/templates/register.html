@@ -5,32 +5,34 @@
 {% endblock meta %}
 
 {% block content %}
-<div class="form-style">
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-    <div class="max-w-md w-full relative z-10">
-      <div class="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
-      <div class="text-center mb-8">
-        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Join Us</h2>
-        <p class="text-gray-500">Create your Mocnels Momentum account</p>
+<div class="w-full min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-md">
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 sm:p-8 register-card">
+      <!-- Brand / Heading -->
+      <div class="text-center mb-6">
+        <a href="{% url 'main:show_main' %}" class="inline-flex items-center justify-center gap-2 mb-2">
+          <span class="text-xl font-semibold">
+            <span class="text-green-600">Mocnels</span> <span class="text-gray-900">Momentum</span>
+          </span>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">Join Us</h1>
+        <p class="text-gray-600 mt-1">Create your Mocnels Momentum account</p>
       </div>
 
-      <!-- Form Errors Display -->
+      <!-- Errors -->
       {% if form.non_field_errors %}
-        <div class="mb-6">
+        <div class="mb-4">
           {% for error in form.non_field_errors %}
-            <div class="px-4 py-3 rounded text-sm border bg-red-50 border-red-200 text-red-700">
-              {{ error }}
-            </div>
+            <div class="px-4 py-3 rounded-md text-sm border bg-red-50 border-red-200 text-red-700">{{ error }}</div>
           {% endfor %}
         </div>
       {% endif %}
-
       {% if form.errors %}
-        <div class="mb-6">
+        <div class="mb-4">
           {% for field, errors in form.errors.items %}
             {% if field != '__all__' %}
               {% for error in errors %}
-                <div class="px-4 py-3 rounded text-sm border bg-red-50 border-red-200 text-red-700 mb-2">
+                <div class="px-4 py-3 rounded-md text-sm border bg-red-50 border-red-200 text-red-700 mb-2">
                   <strong>{{ field|title }}:</strong> {{ error }}
                 </div>
               {% endfor %}
@@ -39,80 +41,131 @@
         </div>
       {% endif %}
 
-      <form method="POST" action="" class="space-y-5">
+      <!-- Form -->
+      <form method="POST" class="space-y-5" novalidate>
         {% csrf_token %}
-        
+
+        <!-- Username -->
         <div>
-          <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
-          <input 
-            id="username" 
-            name="username" 
-            type="text" 
-            required 
-            class="w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:border-green-500 transition duration-200" 
-            placeholder="Choose a username">
+          <label for="username" class="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+          <div class="relative">
+            <span class="input-icon-left">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="size-6 input-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+              </svg>
+            </span>
+            <input id="username" name="username" type="text" autocomplete="username" required
+                   class="w-full pl-12 pr-12 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-green-500 transition-colors"
+                   placeholder="Choose a username">
+          </div>
         </div>
 
+        <!-- Password -->
         <div>
-          <label for="password1" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-          <input 
-            id="password1" 
-            name="password1" 
-            type="password" 
-            required 
-            class="w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:border-green-500 transition duration-200" 
-            placeholder="Create a password">
+          <label for="password1" class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+          <div class="relative">
+            <span class="input-icon-left">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke-width="0" stroke="currentColor" class="size-6 input-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+            </span>
+            <input id="password1" name="password1" type="password" autocomplete="new-password" required
+                   class="w-full pl-12 pr-12 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-green-500 transition-colors"
+                   placeholder="Create a password" aria-describedby="pwText">
+            <button type="button" id="togglePw1" class="input-icon-right" aria-label="Show password">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7Zm0 11a4 4 0 1 1 4-4 4 4 0 0 1-4 4Z"/></svg>
+            </button>
+          </div>
+          <div class="mt-2">
+            <div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div id="pwBar" class="h-full w-0 bg-red-500 transition-all"></div>
+            </div>
+            <p id="pwText" class="mt-1 text-xs text-gray-500">Use 8+ chars with a mix of upper/lowercase, numbers & symbols.</p>
+          </div>
         </div>
 
+        <!-- Confirm -->
         <div>
-          <label for="password2" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-          <input 
-            id="password2" 
-            name="password2" 
-            type="password" 
-            required 
-            class="w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:border-green-500 transition duration-200" 
-            placeholder="Confirm your password">
+          <label for="password2" class="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
+          <div class="relative">
+            <span class="input-icon-left">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            </span>
+            <input id="password2" name="password2" type="password" autocomplete="new-password" required
+                   class="w-full pl-12 pr-12 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-green-500 transition-colors"
+                   placeholder="Confirm your password">
+            <button type="button" id="togglePw2" class="input-icon-right" aria-label="Show password">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7Zm0 11a4 4 0 1 1 4-4 4 4 0 0 1-4 4Z"/></svg>
+            </button>
+          </div>
+          <p id="matchText" class="mt-1 text-xs text-gray-500"></p>
         </div>
 
-        <button 
-          type="submit" 
-          class="w-full bg-green-600 text-white font-medium py-3 px-4 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200">
+        <button id="submitBtn" type="submit"
+                class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
           Create Account
         </button>
       </form>
 
-      <!-- Messages Display -->
-      {% if messages %}
-        <div class="mt-6">
-          {% for message in messages %}
-            <div 
-              class="
-                px-4 py-3 rounded text-sm border
-                {% if message.tags == 'success' %}
-                  bg-green-50 border-green-200 text-green-700
-                {% elif message.tags == 'error' %}
-                  bg-red-50 border-red-200 text-red-700
-                {% else %}
-                  bg-gray-50 border-gray-200 text-gray-700
-                {% endif %}
-              ">
-              {{ message }}
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      <div class="mt-6 text-center">
+      <div class="mt-8 pt-6 border-t border-gray-200 text-center">
         <p class="text-gray-500 text-sm">
-          Already have an account? 
-          <a href="{% url 'main:login' %}" class="text-green-600 hover:text-green-700 font-medium">
-            Sign In
-          </a>
+          Already have an account?
+          <a href="{% url 'main:login' %}" class="text-green-600 hover:text-green-700 font-medium">Sign In</a>
         </p>
-      </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  const pw1 = document.getElementById('password1');
+  const pw2 = document.getElementById('password2');
+  const bar = document.getElementById('pwBar');
+  const txt = document.getElementById('pwText');
+  const match = document.getElementById('matchText');
+  const submit = document.getElementById('submitBtn');
+
+  function score(s){ let sc=0; if(!s) return 0;
+    if(s.length>=8) sc++;
+    if(/[A-Z]/.test(s)) sc++;
+    if(/[a-z]/.test(s)) sc++;
+    if(/\d/.test(s)) sc++;
+    if(/[^A-Za-z0-9]/.test(s)) sc++;
+    return sc;
+  } 
+
+  function renderStrength(){
+    const s = score(pw1.value);
+    const pct = [0,20,40,60,80,100][s];
+    bar.style.width = pct + '%';
+    const colors = ['bg-red-500','bg-orange-500','bg-yellow-500','bg-lime-500','bg-green-500'];
+    bar.className = 'h-full transition-all ' + colors[Math.max(0,s-1)];
+    const labels = ['Too short','Weak','Fair','Good','Strong'];
+    txt.textContent = s===0 ? 'Use 8+ chars with a mix of cases, numbers & symbols.' : labels[Math.max(1,s)-1];
+  }
+
+  function renderMatch(){
+    if(!pw2.value){ match.textContent=''; submit.disabled = score(pw1.value)<3; return; }
+    const ok = pw1.value === pw2.value;
+    match.textContent = ok ? 'Passwords match' : 'Passwords do not match';
+    match.className = 'mt-1 text-xs ' + (ok ? 'text-green-600' : 'text-red-600');
+    submit.disabled = !ok || score(pw1.value)<3;
+  }
+
+  ['input','change'].forEach(ev=>{
+    pw1.addEventListener(ev, ()=>{ renderStrength(); renderMatch(); });
+    pw2.addEventListener(ev, renderMatch);
+  });
+
+  function toggle(btnId, input){
+    const btn = document.getElementById(btnId);
+    btn.addEventListener('click', ()=>{ input.type = input.type==='password'?'text':'password'; });
+  }
+  toggle('togglePw1', pw1);
+  toggle('togglePw2', pw2);
+
+  renderStrength();
+})();
+</script>
 {% endblock content %}
