@@ -16,7 +16,7 @@
     <div class="absolute top-3 left-3 flex gap-2">
       {% if products.category %}
         <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500 text-white shadow">
-          {% firstof products.get_category_display products.category %}
+          {{ products.get_category_display }}
         </span>
       {% endif %}
       {% if products.brand %}

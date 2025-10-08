@@ -36,12 +36,11 @@
             {{ npm|default:"Student" }} - {{ kelas|default:"Class" }}
           </div>
         </div>
-        <a
-          href="{% url 'main:logout' %}"
+        <button id="logout-btn-desktop"
           class="text-red-600 hover:text-red-700 font-medium transition-colors"
-        >
+          data-url="{% url 'main:logout' %}">
           Logout
-        </a>
+        </button>
         {% else %}
         <a
           href="{% url 'main:login' %}"
@@ -110,12 +109,11 @@
             {{ npm|default:"Student" }} - {{ class|default:"Class" }}
           </div>
         </div>
-        <a
-          href="{% url 'main:logout' %}"
+        <button id="logout-btn-mobile"
           class="block text-red-600 hover:text-red-700 font-medium py-3 transition-colors"
-        >
+          data-url="{% url 'main:logout' %}">
           Logout
-        </a>
+        </button>
         {% else %}
         <div class="space-y-3">
           <a
@@ -142,6 +140,58 @@
     btn.addEventListener("click", () => {
       menu.classList.toggle("hidden");
     });
+
+    function setupLogout(btnId) {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', async function() {
+                const url = this.getAttribute('data-url');
+                this.disabled = true;
+                this.textContent = 'Logging out...';
+                
+                try {
+                    const csrfToken = getCSRFToken(); // getCSRFToken dari base.html
+                    if (!csrfToken) {
+                        showToast('CSRF token tidak ditemukan.', 'error');
+                        this.disabled = false;
+                        this.textContent = 'Logout';
+                        return;
+                    }
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken
+                        },
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showToast(data.message, 'success');
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 1000); 
+                    } else {
+                        showToast(data.message || 'Logout gagal.', 'error');
+                    }
+                    
+                } catch (error) {
+                    showToast('Kesalahan jaringan saat logout.', 'error');
+                } finally {
+                    this.disabled = false;
+                    this.textContent = 'Logout';
+                }
+            });
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        setupLogout('logout-btn-desktop');
+        setupLogout('logout-btn-mobile');
+    });
+
   </script>
 </nav>
 

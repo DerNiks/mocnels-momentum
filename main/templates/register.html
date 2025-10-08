@@ -167,5 +167,63 @@
 
   renderStrength();
 })();
+
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (submitBtn.disabled) {
+        showToast('Persyaratan kata sandi belum terpenuhi atau kata sandi tidak cocok.', 'warning', 3000);
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mendaftar...';
+
+    const formData = new FormData(form);
+    const csrfToken = formData.get('csrfmiddlewaretoken') || getCSRFToken();
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                window.location.href = "{% url 'main:login' %}";
+            }, 1000);
+        } else {
+            let errorMessageText = data.message || 'Pendaftaran gagal.';
+            
+            if (response.status === 400 && data.errors) {
+                 if (data.errors.non_field_errors) {
+                    errorMessageText = data.errors.non_field_errors.join(' ');
+                } else {
+                    const firstField = Object.keys(data.errors)[0];
+                    if(firstField) {
+                       errorMessageText = `${firstField.charAt(0).toUpperCase() + firstField.slice(1)}: ${data.errors[firstField].join(' ')}`;
+                    }
+                }
+            }
+            showToast(errorMessageText, 'error', 5000);
+        }
+
+    } catch (error) {
+        showToast('Kesalahan jaringan. Gagal terhubung ke server.', 'error', 5000);
+    } finally {
+        document.getElementById('password1').dispatchEvent(new Event('input'));
+        document.getElementById('password2').dispatchEvent(new Event('input'));
+        submitBtn.textContent = 'Create Account';
+    }
+});
 </script>
 {% endblock content %}

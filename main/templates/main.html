@@ -10,48 +10,444 @@
 <div class="bg-gray-50 w-full pt-16 min-h-screen">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-    <!-- Header Section -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Latest Products</h1>
-      <p class="text-gray-600">Stay updated with the latest football products</p>
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Latest Products</h1>
+        <p class="text-gray-600">Stay updated with the latest football products</p>
+      </div>
+      <button id="refresh-products-btn"
+        class="bg-blue-600 text-white px-4 py-2 rounded-md font-medium transition-colors hover:bg-blue-700">
+        Refresh List
+      </button>
     </div>
 
-    <!-- Filter Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 bg-white rounded-lg border border-gray-200 p-4">
       <div class="flex space-x-3 mb-4 sm:mb-0">
-        <a href="?" class="{% if request.GET.filter == 'all' or not request.GET.filter  %} bg-green-600 text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors hover:bg-green-600 hover:text-white">
+        <button data-filter="all" class="filter-btn bg-green-600 text-white px-4 py-2 rounded-md font-medium transition-colors hover:bg-green-700">
           All Products
-        </a>
-        <a href="?filter=my" class="{% if request.GET.filter == 'my' %} bg-green-600 text-white{% else %}bg-white text-gray-700 border border-gray-300{% endif %} px-4 py-2 rounded-md font-medium transition-colors hover:bg-green-600 hover:text-white">
+        </button>
+        <button data-filter="my" class="filter-btn bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium transition-colors hover:bg-green-600 hover:text-white hover:border-green-600">
           My Products
-        </a>
+        </button>
       </div>
-      {% if user.is_authenticated %}
-        <div class="text-sm text-gray-500">
+      <div class="flex items-center space-x-4">
+        {% if user.is_authenticated %}
+        <div class="text-sm text-gray-500 hidden sm:block">
           Last login: {{ last_login }}
         </div>
-      {% endif %}
+        <button id="create-product-btn"
+          class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+          Create Product
+        </button>
+        {% endif %}
+      </div>
     </div>
 
-    <!-- Products Grid -->
-    {% if not products_list %}
-      <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
+    <div id="products-list-container">
+      <div id="loading-state" class="text-center p-12 hidden">
+        <svg class="animate-spin h-8 w-8 text-green-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <p class="mt-4 text-gray-500">Memuat produk...</p>
+      </div>
+      <div id="empty-state" class="bg-white rounded-lg border border-gray-200 p-12 text-center hidden">
         <div class="w-32 h-32 mx-auto mb-4">
           <img src="{% static 'image/no-products.png' %}" alt="No products available" class="w-full h-full object-contain">
         </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-        <p class="text-gray-500 mb-6">Be the first to release an article</p>
-        <a href="{% url 'main:create_products' %}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-          Create Products
-        </a>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Tidak ada produk ditemukan</h3>
+        <p class="text-gray-500 mb-6">Jadilah yang pertama untuk merilis sebuah produk</p>
+        <button id="empty-create-btn"
+          class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+          Buat Produk
+        </button>
       </div>
-    {% else %}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for products in products_list %}
-          {% include 'card_products.html' with products=products %}
-        {% endfor %}
+      <div id="error-state" class="bg-red-50 rounded-lg border border-red-200 p-6 text-center text-red-700 hidden">
+        <h3 class="font-medium">Gagal Mengambil Produk</h3>
+        <p id="error-message" class="text-sm mt-1">Terjadi kesalahan saat mencoba memuat daftar produk.</p>
+        <button id="error-retry-btn" class="mt-4 text-sm font-medium underline">Coba Lagi</button>
       </div>
-    {% endif %}
+      <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+    </div>
+    
   </div>
 </div>
+
+<div id="crud-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[90] hidden items-center justify-center p-4" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6">
+      
+      <form id="product-form" class="space-y-4 form-style">
+        
+        <div id="modal-content-form" class="space-y-4">
+          <div class="text-center p-10"><p class="text-gray-500">Memuat form...</p></div>
+        </div>
+        
+        <div id="form-buttons" class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <button type="button" id="modal-cancel-btn" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-50 transition-colors">
+            Batal
+          </button>
+          <button type="submit" id="modal-submit-btn" class="bg-green-600 text-white px-6 py-2 rounded-md font-medium hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[95] hidden items-center justify-center p-4" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="bg-white rounded-lg shadow-xl max-w-sm w-full">
+    <div class="p-6">
+      <h3 class="text-xl font-bold text-gray-900 mb-4">Konfirmasi Penghapusan</h3>
+      <p class="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus produk "<strong id="delete-product-name">Nama Produk</strong>"? Tindakan ini tidak dapat dibatalkan.</p>
+      
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button type="button" id="delete-cancel-btn" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-50 transition-colors">
+          Batal
+        </button>
+        <button type="button" id="delete-confirm-btn" data-product-id=""
+          class="bg-red-600 text-white px-6 py-2 rounded-md font-medium hover:bg-red-700 transition-colors">
+          Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productsGrid = document.getElementById('products-grid');
+    const loadingState = document.getElementById('loading-state');
+    const emptyState = document.getElementById('empty-state');
+    const errorState = document.getElementById('error-state');
+    const errorMessage = document.getElementById('error-message');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const refreshBtn = document.getElementById('refresh-products-btn');
+    const errorRetryBtn = document.getElementById('error-retry-btn');
+    
+    const crudModal = document.getElementById('crud-modal');
+    const modalContentForm = document.getElementById('modal-content-form');
+    const productForm = document.getElementById('product-form');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const deleteModal = document.getElementById('delete-modal');
+    const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+    const createProductBtn = document.getElementById('create-product-btn');
+    const emptyCreateBtn = document.getElementById('empty-create-btn');
+    
+    let currentFilter = 'all';
+    let productFormUrl = ''; 
+
+    function showState(state) {
+        loadingState.classList.add('hidden');
+        emptyState.classList.add('hidden');
+        errorState.classList.add('hidden');
+        productsGrid.classList.add('hidden');
+
+        if (state === 'loading') {
+            loadingState.classList.remove('hidden');
+        } else if (state === 'empty') {
+            emptyState.classList.remove('hidden');
+        } else if (state === 'error') {
+            errorState.classList.remove('hidden');
+        } else if (state === 'grid') {
+            productsGrid.classList.remove('hidden');
+        }
+    }
+
+    async function fetchProducts(filter) {
+        showState('loading');
+        try {
+            const endpoint = "{% url 'main:get_products_json' %}";
+            const url = filter && filter !== 'all' ? `${endpoint}?filter=${filter}` : endpoint;
+            
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const products = await response.json();
+            renderProducts(products);
+
+        } catch (e) {
+            errorMessage.textContent = `Error: ${e.message}. Silakan periksa koneksi Anda.`;
+            showState('error');
+            showToast('Gagal memuat daftar produk.', 'error');
+        }
+    }
+
+    function renderProducts(products) {
+        productsGrid.innerHTML = '';
+        if (products.length === 0) {
+            showState('empty');
+            return;
+        }
+
+        products.forEach(product => {
+            const cardHtml = `
+            <article class="group relative overflow-hidden rounded-2xl bg-slate-800/80 border border-slate-700 hover:border-slate-600 hover:shadow-[0_10px_35px_rgba(0,0,0,0.45)] transition-all">
+                <div class="relative aspect-[4/3] overflow-hidden">
+                    ${product.thumbnail ? `<img src="${product.thumbnail}" alt="${product.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">` : ''}
+                    <div class="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                    <div class="absolute top-3 left-3 flex gap-2">
+                        ${product.category_display ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500 text-white shadow">${product.category_display}</span>` : ''}
+                        ${product.brand ? `<span class="px-2.5 py-1 rounded-full text-[11px] bg-slate-900/80 text-slate-200 border border-slate-700/70">${product.brand}</span>` : ''}
+                    </div>
+                    <div class="absolute top-3 right-3 flex gap-2">
+                        ${product.is_featured ? '<span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-yellow-400/90 text-black">Featured</span>' : ''}
+                    </div>
+                </div>
+                <div class="p-5">
+                    <h3 class="text-lg font-semibold text-slate-100 leading-tight mb-1 line-clamp-2">
+                        <a href="/products/${product.id}/" class="hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded">
+                            ${product.name}
+                        </a>
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-x-3 text-xs text-slate-400 mb-3">
+                        <time>${product.created_at}</time>
+                        <span>• ${product.sales_count} sales</span>
+                    </div>
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <p class="text-slate-300 text-sm leading-relaxed line-clamp-2">
+                            ${product.description.substring(0, 100)}...
+                        </p>
+                        <div class="text-right shrink-0">
+                            <div class="text-emerald-400 font-semibold text-lg whitespace-nowrap">
+                                Rp ${product.price.toLocaleString('id-ID')}
+                            </div>
+                            <div class="text-[11px] ${product.stock > 0 ? 'text-emerald-500' : 'text-rose-400'}">
+                                ${product.stock > 0 ? 'In stock' : 'Out'}
+                            </div>
+                        </div>
+                    </div>
+                    ${product.is_owner ? `
+                    <div class="flex items-center gap-3 text-sm">
+                        <button type="button" class="text-slate-300 hover:text-white edit-btn" data-id="${product.id}">Edit</button>
+                        <button type="button" class="text-rose-400 hover:text-rose-300 delete-btn" data-id="${product.id}" data-name="${product.name}">Hapus</button>
+                    </div>` : ''}
+                </div>
+            </article>
+            `;
+            productsGrid.insertAdjacentHTML('beforeend', cardHtml);
+        });
+
+        attachCardButtonListeners(); 
+        showState('grid');
+    }
+    
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const newFilter = btn.getAttribute('data-filter');
+            if (newFilter === currentFilter) return;
+
+            filterButtons.forEach(f => {
+                f.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-700');
+                f.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300', 'hover:bg-green-600', 'hover:text-white', 'hover:border-green-600');
+            });
+            btn.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300', 'hover:border-green-600', 'hover:bg-green-600', 'hover:text-white');
+            btn.classList.add('bg-green-600', 'text-white');
+
+            currentFilter = newFilter;
+            fetchProducts(currentFilter);
+        });
+    });
+
+    refreshBtn.addEventListener('click', () => fetchProducts(currentFilter));
+    errorRetryBtn.addEventListener('click', () => fetchProducts(currentFilter));
+
+    function openCrudModal(productId = null) {
+        crudModal.classList.remove('hidden');
+        crudModal.classList.add('flex');
+        
+        productForm.reset();
+        clearFormErrors();
+        
+        let formLoadBaseUrl = "{% url 'main:get_product_form_create' %}"; // BASE URL TANPA ID
+        if (productId) {
+            productForm.setAttribute('data-mode', 'edit');
+            productFormUrl = `/products/${productId}/edit/`; 
+            formLoadUrl = `${formLoadBaseUrl}${productId}/`; 
+            
+            document.getElementById('modal-submit-btn').textContent = 'Update Produk';
+        } else {
+            productForm.setAttribute('data-mode', 'create');
+            productFormUrl = "{% url 'main:create_products' %}";
+            formLoadUrl = formLoadBaseUrl;
+            document.getElementById('modal-submit-btn').textContent = 'Publikasikan Produk Baru';
+        }
+        
+        modalContentForm.innerHTML = '<div class="text-center p-10"><p class="text-gray-500">Memuat form...</p></div>';
+        
+        fetch(formLoadUrl, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                 throw new Error(`Gagal memuat form. Status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            modalContentForm.innerHTML = html;
+        })
+        .catch(error => {
+            modalContentForm.innerHTML = `<div class="text-center p-10 text-red-600">Error: ${error.message}</div>`;
+            showToast('Gagal memuat form. Coba lagi.', 'error');
+        });
+    }
+
+    function closeCrudModal() {
+        crudModal.classList.add('hidden');
+        crudModal.classList.remove('flex');
+        modalContentForm.innerHTML = ''; 
+        productForm.reset();
+        clearFormErrors();
+    }
+    
+    modalCancelBtn.addEventListener('click', closeCrudModal);
+    createProductBtn.addEventListener('click', () => openCrudModal(null));
+    emptyCreateBtn.addEventListener('click', () => openCrudModal(null));
+
+    function clearFormErrors() {
+         document.querySelectorAll('p[class*="field-error-"]').forEach(el => {
+            el.textContent = '';
+            el.style.display = 'none';
+        });
+    }
+
+    function displayFormErrors(errors) {
+        clearFormErrors();
+        for (const fieldName in errors) {
+            const errorElement = productForm.querySelector(`.field-error-${fieldName}`);
+            if (errorElement) {
+                errorElement.textContent = errors[fieldName].join(' ');
+                errorElement.style.display = 'block';
+            }
+            if (fieldName === '__all__') {
+                showToast(errors[fieldName].join(' '), 'error', 5000);
+            }
+        }
+    }
+
+    productForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('modal-submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memproses...';
+        clearFormErrors();
+
+        const formData = new FormData(this);
+        const csrfToken = formData.get('csrfmiddlewaretoken') || getCSRFToken(); 
+
+        try {
+            const response = await fetch(productFormUrl, {
+                method: 'POST',
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast(data.message, 'success');
+                closeCrudModal();
+                fetchProducts(currentFilter);
+            } else {
+                if (response.status === 400 && data.errors) {
+                    displayFormErrors(data.errors);
+                } else {
+                    showToast(data.message || 'Terjadi kesalahan saat pengiriman form.', 'error');
+                }
+            }
+
+        } catch (error) {
+            showToast('Kesalahan jaringan atau respons yang tidak terduga.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = productForm.getAttribute('data-mode') === 'edit' ? 'Update Produk' : 'Publikasikan Produk Baru';
+        }
+    });
+
+    function openDeleteModal(productId, productName) {
+        document.getElementById('delete-product-name').textContent = productName;
+        deleteConfirmBtn.setAttribute('data-product-id', productId);
+        deleteModal.classList.remove('hidden');
+        deleteModal.classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+        deleteModal.classList.add('hidden');
+        deleteModal.classList.remove('flex');
+    }
+
+    document.getElementById('delete-cancel-btn').addEventListener('click', closeDeleteModal);
+
+    deleteConfirmBtn.addEventListener('click', async function() {
+        const productId = this.getAttribute('data-product-id');
+        const deleteUrl = `/products/${productId}/delete/`; 
+        
+        this.disabled = true;
+        this.textContent = 'Menghapus...';
+
+        try {
+             const csrfToken = getCSRFToken();
+             if (!csrfToken) {
+                showToast('CSRF token tidak ditemukan.', 'error');
+                this.disabled = false;
+                this.textContent = 'Hapus';
+                return;
+            }
+            
+            const response = await fetch(deleteUrl, {
+                method: 'POST', 
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                showToast(data.message, 'success');
+                closeDeleteModal();
+                fetchProducts(currentFilter);
+            } else {
+                showToast(data.message || 'Gagal menghapus produk.', 'error');
+            }
+            
+        } catch (error) {
+            showToast('Kesalahan jaringan saat penghapusan.', 'error');
+        } finally {
+            this.disabled = false;
+            this.textContent = 'Hapus';
+        }
+    });
+
+    function attachCardButtonListeners() {
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                openCrudModal(id); 
+            });
+        });
+        
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                openDeleteModal(id, name);
+            });
+        });
+    }
+
+    fetchProducts(currentFilter);
+});
+</script>
 {% endblock content %}

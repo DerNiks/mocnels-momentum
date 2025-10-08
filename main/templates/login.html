@@ -137,5 +137,50 @@
       this.setAttribute('aria-label', is ? 'Hide password' : 'Show password');
     });
   })();
+
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitBtn = document.getElementById('login-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing In...';
+
+    const formData = new FormData(form);
+    const csrfToken = formData.get('csrfmiddlewaretoken') || getCSRFToken();
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 1000); 
+        } else {
+            let errorMessageText = data.message || 'Login gagal.';
+            if (response.status === 400 && data.errors && data.errors.non_field_errors) {
+                errorMessageText = data.errors.non_field_errors.join(' ');
+            }
+            showToast(errorMessageText, 'error', 5000);
+            document.getElementById('password').value = '';
+        }
+
+    } catch (error) {
+        showToast('Kesalahan jaringan. Gagal terhubung ke server.', 'error', 5000);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+    }
+});
+
 </script>
 {% endblock content %}
