@@ -209,9 +209,8 @@ def show_xml(request):
     return HttpResponse(xml_data, content_type='application/xml')
 
 def show_json(request):
-    products = Product.objects.all()
-    json_data = serializers.serialize('json', products)
-    return HttpResponse(json_data, content_type='application/json')
+    data = Product.objects.filter(user=request.user)
+    return HttpResponse(serializers.serialize("json", data), content_type="application/json")
 
 def show_xml_by_id(request, products_id):
     try:
