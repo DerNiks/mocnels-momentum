@@ -8,9 +8,12 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import datetime
+from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.template.loader import render_to_string
+import json
+from django.utils.html import strip_tags
 
 # Create your views here.
 @login_required(login_url='/login')
@@ -209,7 +212,11 @@ def show_xml(request):
     return HttpResponse(xml_data, content_type='application/xml')
 
 def show_json(request):
-    data = Product.objects.filter(user=request.user)
+    if request.user.is_authenticated:
+        data = Product.objects.filter(user=request.user)
+    else:
+        data = Product.objects.none()
+
     return HttpResponse(serializers.serialize("json", data), content_type="application/json")
 
 def show_xml_by_id(request, products_id):
@@ -245,3 +252,40 @@ def proxy_image(request):
         )
     except requests.RequestException as e:
         return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+
+@csrf_exempt
+def create_product_flutter(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = strip_tags(data.get("name", ""))
+            description = strip_tags(data.get("description", ""))
+            brand = strip_tags(data.get("brand", ""))
+            category = strip_tags(data.get("category", ""))
+            thumbnail = data.get("thumbnail", "")
+            price = int(data.get("price", 0))
+            stock = int(data.get("stock", 0))
+            is_featured_raw = data.get("is_featured", False)
+            is_featured = str(is_featured_raw).lower() == 'true'
+            user = request.user
+            new_product = Product(
+                user=user,
+                name=name,
+                price=price,
+                description=description,
+                brand=brand,
+                stock=stock,
+                category=category,
+                thumbnail=thumbnail,
+                is_featured=is_featured,
+            )
+            
+            new_product.save()
+
+            return JsonResponse({"status": "success"}, status=200)
+        
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+            
+    else:
+        return JsonResponse({"status": "error", "message": "Method not allowed"}, status=401)
